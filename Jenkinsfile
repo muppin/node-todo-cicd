@@ -1,29 +1,38 @@
-pipeline {
-    agent { label "dev-server" }
+pipeline{
+    agent any
     stages{
-        stage("Clone Code"){
+        stage('Checkout'){
             steps{
-                git url: "https://github.com/LondheShubham153/node-todo-cicd.git", branch: "master"
+                git 'https://github.com/muppin/node-todo-cicd.git'
             }
         }
-        stage("Build and Test"){
+        stage('Build'){
             steps{
-                sh "docker build . -t node-app-test-new"
+                sh 'docker build -t node_app .'
             }
         }
-        stage("Push to Docker Hub"){
+        stage('Dockerpush'){
             steps{
-                withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
-                sh "docker tag node-app-test-new ${env.dockerHubUser}/node-app-test-new:latest"
-                sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                sh "docker push ${env.dockerHubUser}/node-app-test-new:latest"
+                withCredentials([usernamePassword(credentialsId: 'dockerHub', passwordVariable: 'pswd', usernameVariable: 'usr')]) {
+                 sh 'docker login -u $usr -p $pswd' 
+                 sh 'docker tag node_app muppin/node_app:${BUILD_NUMBER}'
+                 sh 'docker push muppin/node_app:${BUILD_NUMBER} '
+                    
                 }
             }
         }
-        stage("Deploy"){
+        stage('Deploy'){
             steps{
-                sh "docker-compose down && docker-compose up -d"
+             sh "docker-compose down && docker-compose up -d"
+            
             }
         }
+        stage('remove image'){
+            steps{
+                sh 'docker rmi muppin/node_app:${BUILD_NUMBER}'
+            }
+        }
+    
     }
-}
+}     
+
